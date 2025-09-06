@@ -8,12 +8,13 @@
 
 #include <utility>
 
+#include "ethernet_link.h"
 #include "openhd_config.h"
 #include "openhd_global_constants.hpp"
 #include "openhd_util_filesystem.h"
 #include "wb_link.h"
 
-static std::string ETHERNET_FILE_PATH = "//ethernet.txt";
+static std::string ETHERNET_FILE_PATH = "/boot/openhd/ethernet.txt";
 
 OHDInterface::OHDInterface(OHDPlatform platform1,OHDProfile profile1,std::shared_ptr<openhd::ActionHandler> opt_action_handler,bool continue_without_wb_card)
     : m_platform(platform1),

@@ -13,7 +13,7 @@ namespace openhd::tmp{
 // Note: case sensitive
 static constexpr auto FILENAME_AIR="/boot/openhd/air.txt";
 static constexpr auto FILENAME_GROUND="/boot/openhd/ground.txt";
-const auto FILENAME_ETHERNET = "/boot/openhd/ethernet.txt";
+static const auto FILENAME_ETHERNET = "/boot/openhd/ethernet.txt";
 
 static bool file_air_exists(){
   return OHDFilesystemUtil::exists(FILENAME_AIR);

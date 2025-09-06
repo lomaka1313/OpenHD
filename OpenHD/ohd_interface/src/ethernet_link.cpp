@@ -1,28 +1,23 @@
 #include "ethernet_link.h"
 
 #include <arpa/inet.h>
-#include <unistd.h>
-
-#include <cstring>
 #include <iostream>
 
-#include "config_paths.h"
 #include "openhd_config.h"
 #include "openhd_util.h"
 #include "openhd_util_filesystem.h"
 
-static std::string ETHERNET_FILE_PATH =
-    std::string(getConfigBasePath()) + "ethernet.txt";
+static std::string ETHERNET_FILE_PATH = "/boot/openhd/ethernet.txt";
 
 EthernetLink::EthernetLink(const openhd::Config& config, OHDProfile profile)
     : m_config(config), m_profile(profile) {
   // Load the Ethernet configuration from ethernet.txt if it exists
   if (OHDFilesystemUtil::exists(ETHERNET_FILE_PATH)) {
     try {
-      GROUND_UNIT_IP = m_config.GROUND_UNIT_IP;
-      AIR_UNIT_IP = m_config.AIR_UNIT_IP;
-      VIDEO_PORT = m_config.VIDEO_PORT;
-      TELEMETRY_PORT = m_config.TELEMETRY_PORT;
+      GROUND_UNIT_IP = m_config.ETH_GROUND_UNIT_IP;
+      AIR_UNIT_IP = m_config.ETH_AIR_UNIT_IP;
+      VIDEO_PORT = m_config.ETH_VIDEO_PORT;
+      TELEMETRY_PORT = m_config.ETH_TELEMETRY_PORT;
     } catch (const std::exception& ex) {
       std::cerr << "Failed to read ethernet.txt: " << ex.what() << std::endl;
       throw;
@@ -99,15 +94,10 @@ void EthernetLink::transmit_video_data(
     const openhd::FragmentedVideoFrame& fragmented_video_frame) {
   // Send video data fragments to the destination
   if (m_video_tx) {
-    for (const auto& fragment : fragmented_video_frame.rtp_fragments) {
+    for (const auto& fragment : fragmented_video_frame.frame_fragments) {
       m_video_tx->forwardPacketViaUDP(fragment->data(), fragment->size());
     }
   }
-}
-
-void EthernetLink::transmit_audio_data(
-    const openhd::AudioPacket& audio_packet) {
-  // Currently not implemented for EthernetLink
 }
 
 void EthernetLink::handle_video_data(int stream_index, const uint8_t* data,

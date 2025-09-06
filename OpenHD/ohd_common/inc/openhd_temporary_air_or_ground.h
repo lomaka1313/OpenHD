@@ -13,12 +13,17 @@ namespace openhd::tmp{
 // Note: case sensitive
 static constexpr auto FILENAME_AIR="/boot/openhd/air.txt";
 static constexpr auto FILENAME_GROUND="/boot/openhd/ground.txt";
+const auto FILENAME_ETHERNET = "/boot/openhd/ethernet.txt";
 
 static bool file_air_exists(){
   return OHDFilesystemUtil::exists(FILENAME_AIR);
 }
 static bool file_ground_exists(){
   return OHDFilesystemUtil::exists(FILENAME_GROUND);
+}
+
+static bool file_ethernet_exists() {
+  return OHDFilesystemUtil::exists(FILENAME_ETHERNET);
 }
 
 static bool file_air_or_ground_exists(){
@@ -30,9 +35,13 @@ static void delete_any_file_air_or_ground(){
   OHDFilesystemUtil::remove_if_existing(FILENAME_GROUND);
 }
 
+static void delete_file_ethernet() {
+  OHDFilesystemUtil::remove_if_existing(FILENAME_ETHERNET);
+}
+
 static void write_file_air(){
   OHDFilesystemUtil::create_directories("/boot/openhd/");
-  OHDFilesystemUtil::write_file(openhd::tmp::FILENAME_AIR," ");
+  OHDFilesystemUtil::write_file(openhd::tmp::FILENAME_AIR, " ");
 }
 
 static void write_file_ground(){
@@ -40,10 +49,76 @@ static void write_file_ground(){
   OHDFilesystemUtil::write_file(openhd::tmp::FILENAME_GROUND," ");
 }
 
-static bool handle_telemetry_change(int value){
-  //0==ground, 1==air, other: undefined (rejected)
-  if(!(value==0 || value==1))return false;
-  if(value==0){
+// Structure for Ethernet configuration
+struct EthernetConfig {
+  std::string ground_unit_ip = "192.168.2.1";
+  std::string air_unit_ip = "192.168.2.18";
+  int video_port = 5910;
+  int telemetry_port = 5920;
+
+  // Parse Ethernet configuration from string
+  static EthernetConfig fromString(const std::string& content) {
+    EthernetConfig config;
+    std::istringstream stream(content);
+    std::string line;
+    while (std::getline(stream, line)) {
+      if (line.empty() || line[0] == '#')
+        continue;  // Skip comments and empty lines
+      auto pos = line.find('=');
+      if (pos != std::string::npos) {
+        auto key = line.substr(0, pos);
+        auto value = line.substr(pos + 1);
+        if (key == "GROUND_UNIT_IP")
+          config.ground_unit_ip = value;
+        else if (key == "AIR_UNIT_IP")
+          config.air_unit_ip = value;
+        else if (key == "VIDEO_PORT")
+          config.video_port = std::stoi(value);
+        else if (key == "TELEMETRY_PORT")
+          config.telemetry_port = std::stoi(value);
+      }
+    }
+    return config;
+  }
+
+  // Serialize Ethernet configuration to string
+  std::string toString() const {
+    std::ostringstream stream;
+    stream << "GROUND_UNIT_IP=" << ground_unit_ip << "\n";
+    stream << "AIR_UNIT_IP=" << air_unit_ip << "\n";
+    stream << "VIDEO_PORT=" << video_port << "\n";
+    stream << "TELEMETRY_PORT=" << telemetry_port << "\n";
+    return stream.str();
+  }
+};
+
+// Write Ethernet configuration to file
+static void write_file_ethernet(const EthernetConfig& config) {
+  OHDFilesystemUtil::create_directories("/boot/openhd/");
+  OHDFilesystemUtil::write_file(openhd::tmp::FILENAME_ETHERNET,
+                                config.toString());
+}
+
+// Read Ethernet configuration from file
+static EthernetConfig read_file_ethernet() {
+  if (!file_ethernet_exists()) {
+    throw std::runtime_error("Ethernet configuration file not found: " +
+                             FILENAME_ETHERNET);
+  }
+  auto content = OHDFilesystemUtil::read_file(FILENAME_ETHERNET);
+  return EthernetConfig::fromString(content);
+}
+
+// Delete all configuration files (air, ground, ethernet)
+static void delete_all_config_files() {
+  delete_any_file_air_or_ground();
+  delete_file_ethernet();
+}
+
+static bool handle_telemetry_change(int value) {
+  // 0==ground, 1==air, other: undefined (rejected)
+  if (!(value == 0 || value == 1)) return false;
+  if (value == 0) {
     // change to ground mode. Remove any existing file(s) if there are any
     openhd::tmp::delete_any_file_air_or_ground();
     openhd::tmp::write_file_ground();

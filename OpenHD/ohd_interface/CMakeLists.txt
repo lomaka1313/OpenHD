@@ -28,6 +28,7 @@ set(sources
     src/networking_settings.cpp
     src/wb_link_settings.cpp
     #src/wifi_command_helper2.cpp
+    src/ethernet_link.cpp
 )
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${sources})

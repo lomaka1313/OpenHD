@@ -27,8 +27,15 @@ struct Config{
   std::string NW_ETHERNET_CARD=RPI_ETHERNET_ONLY;
   std::vector<std::string> NW_MANUAL_FORWARDING_IPS;
   bool NW_FORWARD_TO_LOCALHOST_58XX=false;
+  bool NW_FORWARD_PRIMARY_VIDEO = true;
+  bool NW_FORWARD_SECONDARY_VIDEO = false;
   // GENERAL
   bool GEN_ENABLE_LAST_KNOWN_POSITION= false;
+  // ETHERNET LINK
+  std::string ETH_GROUND_UNIT_IP = "";  // Default to empty string
+  std::string ETH_AIR_UNIT_IP = "";     // Default to empty string
+  int ETH_VIDEO_PORT = 5000;            // Default to port 5000
+  int ETH_TELEMETRY_PORT = 5600;
 };
 // Otherwise, default location is used
 void set_config_file(const std::string& config_file_path);

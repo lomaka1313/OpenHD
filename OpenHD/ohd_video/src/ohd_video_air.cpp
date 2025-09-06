@@ -322,13 +322,21 @@ void OHDVideoAir::set_ext_devices_manager(std::shared_ptr<openhd::ExternalDevice
 void OHDVideoAir::start_stop_forwarding_external_device(openhd::ExternalDevice external_device, bool connected) {
     const std::string client_addr=external_device.external_device_ip;
     if(connected){
-        m_primary_video_forwarder->addForwarder(client_addr,5600);
-        m_secondary_video_forwarder->addForwarder(client_addr,5601);
+        if (openhd::load_config().NW_FORWARD_PRIMARY_VIDEO) {
+          m_primary_video_forwarder->addForwarder(client_addr, 5600);
+        }
+        if (openhd::load_config().NW_FORWARD_SECONDARY_VIDEO) {
+          m_secondary_video_forwarder->addForwarder(client_addr, 5601);
+        }
         m_has_localhost_forwarding_enabled= true;
     }else{
         m_has_localhost_forwarding_enabled=false;
-        m_primary_video_forwarder->removeForwarder(client_addr,5600);
-        m_secondary_video_forwarder->removeForwarder(client_addr,5601);
+        if (openhd::load_config().NW_FORWARD_PRIMARY_VIDEO) {
+          m_primary_video_forwarder->removeForwarder(client_addr, 5600);
+        }
+        if (openhd::load_config().NW_FORWARD_SECONDARY_VIDEO) {
+          m_secondary_video_forwarder->removeForwarder(client_addr, 5601);
+        }
     }
 }
 

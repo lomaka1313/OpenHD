@@ -42,6 +42,18 @@ static openhd::Config load_or_default(){
       ret.NW_MANUAL_FORWARDING_IPS =  r.GetVector<std::string>("network", "NW_MANUAL_FORWARDING_IPS");
       ret.NW_FORWARD_TO_LOCALHOST_58XX = r.Get<bool>("network","NW_FORWARD_TO_LOCALHOST_58XX");
 
+      // Parse Ethernet link configuration
+      ret.ETH_GROUND_UNIT_IP = r.Get<std::string>("ethernet", "ETH_GROUND_UNIT_IP", "");
+      ret.ETH_AIR_UNIT_IP = r.Get<std::string>("ethernet", "ETH_AIR_UNIT_IP", "");
+      ret.ETH_VIDEO_PORT =
+          r.Get<int>("ethernet", "ETH_VIDEO_PORT", 5000);  // Default port 5000
+      ret.ETH_TELEMETRY_PORT =
+          r.Get<int>("ethernet", "ETH_TELEMETRY_PORT", 5600);  // Default port 5600
+      ret.NW_FORWARD_PRIMARY_VIDEO =
+              r.Get<bool>("network", "NW_FORWARD_PRIMARY_VIDEO", true);
+      ret.NW_FORWARD_SECONDARY_VIDEO =
+          r.Get<bool>("network", "NW_FORWARD_SECONDARY_VIDEO", false);
+
       ret.GEN_ENABLE_LAST_KNOWN_POSITION =r.Get<bool>("generic","GEN_ENABLE_LAST_KNOWN_POSITION");
       return ret;
     }catch (std::exception& exception){
@@ -61,7 +73,9 @@ void openhd::debug_config(const openhd::Config& config) {
       "NW_MANUAL_FORWARDING_IPS:{},NW_ETHERNET_CARD:{},NW_FORWARD_TO_LOCALHOST_58XX:{}",
       config.WIFI_ENABLE_AUTODETECT,OHDUtil::str_vec_as_string(config.WIFI_WB_LINK_CARDS),config.WIFI_WIFI_HOTSPOT_CARD,
       config.CAMERA_ENABLE_AUTODETECT,config.CAMERA_N_CAMERAS,config.CAMERA_CAMERA0_TYPE,config.CAMERA_CAMERA1_TYPE,
-      OHDUtil::str_vec_as_string(config.NW_MANUAL_FORWARDING_IPS),config.NW_ETHERNET_CARD,config.NW_FORWARD_TO_LOCALHOST_58XX
+      OHDUtil::str_vec_as_string(config.NW_MANUAL_FORWARDING_IPS),config.NW_ETHERNET_CARD,config.NW_FORWARD_TO_LOCALHOST_58XX,
+      config.ETH_AIR_UNIT_IP, config.ETH_GROUND_UNIT_IP, config.ETH_TELEMETRY_PORT, config.ETH_VIDEO_PORT,
+      config.NW_FORWARD_PRIMARY_VIDEO, config.NW_FORWARD_SECONDARY_VIDEO
       );
 }
 

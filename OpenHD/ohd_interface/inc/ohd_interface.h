@@ -23,6 +23,7 @@
 #include "networking_settings.h"
 
 class WBLink;
+class EthernetLink;
 /**
  * Takes care of everything networking related, like wifibroadcast, usb / tethering / WiFi-hotspot usw.
  * In openhd, there is an instance of this class on both air and ground with partially similar, partially
@@ -64,6 +65,7 @@ private:
   std::unique_ptr<EthernetListener> m_ethernet_listener;
   std::unique_ptr<EthernetHotspot> m_ethernet_hotspot;
   std::unique_ptr<WifiHotspot> m_wifi_hotspot;
+  std::shared_ptr<EthernetLink> m_ethernet_link;
   std::unique_ptr<openhd::LEDBlinker> m_error_blinker;
   std::shared_ptr<openhd::ExternalDeviceManager> m_external_devices_manager;
   std::vector<WiFiCard> monitor_mode_cards{};

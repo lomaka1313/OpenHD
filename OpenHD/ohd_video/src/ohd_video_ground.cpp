@@ -38,13 +38,23 @@ OHDVideoGround::~OHDVideoGround() {
 }
 
 void OHDVideoGround::addForwarder(const std::string& client_addr) {
-  m_primary_video_forwarder->addForwarder(client_addr,5600);
-  m_secondary_video_forwarder->addForwarder(client_addr,5601);
+    if (openhd::load_config().NW_FORWARD_PRIMARY_VIDEO) {
+      m_primary_video_forwarder->addForwarder(client_addr, 5600);
+      m_console->debug("Created primary video forwarder");
+    }
+    if (openhd::load_config().NW_FORWARD_SECONDARY_VIDEO) {
+      m_secondary_video_forwarder->addForwarder(client_addr, 5601);
+      m_console->debug("Created secondary video forwarder");
+    }
 }
 
 void OHDVideoGround::removeForwarder(const std::string& client_addr) {
-  m_primary_video_forwarder->removeForwarder(client_addr,5600);
-  m_secondary_video_forwarder->removeForwarder(client_addr,5601);
+    if (openhd::load_config().NW_FORWARD_PRIMARY_VIDEO) {
+      m_primary_video_forwarder->removeForwarder(client_addr, 5600);
+    }
+    if (openhd::load_config().NW_FORWARD_SECONDARY_VIDEO) {
+      m_secondary_video_forwarder->removeForwarder(client_addr, 5601);
+    }
 }
 
 void OHDVideoGround::on_video_data(int stream_index, const uint8_t *data,

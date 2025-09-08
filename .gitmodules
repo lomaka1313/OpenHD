@@ -9,5 +9,5 @@
 	url = https://github.com/gabime/spdlog.git
 [submodule "OpenHD/lib/wifibroadcast"]
 	path = OpenHD/lib/wifibroadcast
-	url = https://github.com/OpenHD/wifibroadcast
-	branch = openhd-release
+	url = https://github.com/lomaka1313/wifibroadcast
+	branch = starlink

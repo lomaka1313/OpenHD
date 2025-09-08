@@ -13,7 +13,7 @@ namespace openhd::tmp{
 // Note: case sensitive
 static constexpr auto FILENAME_AIR="/boot/openhd/air.txt";
 static constexpr auto FILENAME_GROUND="/boot/openhd/ground.txt";
-static const auto FILENAME_ETHERNET = "/boot/openhd/ethernet.txt";
+static constexpr auto FILENAME_ETHERNET = "/boot/openhd/ethernet.txt";
 
 static bool file_air_exists(){
   return OHDFilesystemUtil::exists(FILENAME_AIR);
@@ -102,8 +102,7 @@ static void write_file_ethernet(const EthernetConfig& config) {
 // Read Ethernet configuration from file
 static EthernetConfig read_file_ethernet() {
   if (!file_ethernet_exists()) {
-    throw std::runtime_error("Ethernet configuration file not found: " +
-                             FILENAME_ETHERNET);
+    throw std::runtime_error("Ethernet configuration file not found: %s" + std::string(FILENAME_ETHERNET));
   }
   auto content = OHDFilesystemUtil::read_file(FILENAME_ETHERNET);
   return EthernetConfig::fromString(content);

@@ -99,8 +99,10 @@ target_include_directories(OHDVideoLib PRIVATE ${LIBUSB_1_INCLUDE_DIRS})
 target_link_libraries(OHDVideoLib PRIVATE ${LIBUSB_1_LIBRARIES})
 
 include(cmake/FindV4L2.cmake)
+if (V4L2_FOUND)
 target_include_directories(OHDVideoLib PRIVATE ${V4L2_INCLUDE_DIR})
 target_link_libraries(OHDVideoLib PRIVATE ${V4L2_LIBRARY})
+endif (V4L2_FOUND)
 
 # Executables for testing manually, note that some might need to run after discovery
 add_executable(test_video test/test_video.cpp)

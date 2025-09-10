@@ -14,8 +14,6 @@
 #include "openhd_util_filesystem.h"
 #include "wb_link.h"
 
-static std::string ETHERNET_FILE_PATH = "/boot/openhd/ethernet.txt";
-
 OHDInterface::OHDInterface(OHDPlatform platform1,OHDProfile profile1,std::shared_ptr<openhd::ActionHandler> opt_action_handler,bool continue_without_wb_card)
     : m_platform(platform1),
     m_profile(std::move(profile1)),
@@ -27,7 +25,7 @@ OHDInterface::OHDInterface(OHDPlatform platform1,OHDProfile profile1,std::shared
   opt_hotspot_card=std::nullopt;
   const auto config=openhd::load_config();
 
-  if (OHDFilesystemUtil::exists(ETHERNET_FILE_PATH)) {
+  if (config.ETH_LINK_ENABLED) {
     m_ethernet_link = std::make_shared<EthernetLink>(m_profile);
     m_console->warn("Using Link: EthernetLink");
     return;

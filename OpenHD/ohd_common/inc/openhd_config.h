@@ -32,6 +32,7 @@ struct Config{
   // GENERAL
   bool GEN_ENABLE_LAST_KNOWN_POSITION= false;
   // ETHERNET LINK
+  bool ETH_LINK_ENABLED= true;
   std::string ETH_GROUND_UNIT_IP = "";  // Default to empty string
   std::string ETH_AIR_UNIT_IP = "";     // Default to empty string
   int ETH_VIDEO_PORT = 5000;            // Default to port 5000

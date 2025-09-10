@@ -7,12 +7,10 @@
 #include "openhd_util.h"
 #include "openhd_util_filesystem.h"
 
-static std::string ETHERNET_FILE_PATH = "/boot/openhd/ethernet.txt";
-
 EthernetLink::EthernetLink(const openhd::Config& config, OHDProfile profile)
     : m_config(config), m_profile(profile) {
   // Load the Ethernet configuration from ethernet.txt if it exists
-  if (OHDFilesystemUtil::exists(ETHERNET_FILE_PATH)) {
+  if (m_config.ETH_LINK_ENABLED) {
     try {
       GROUND_UNIT_IP = m_config.ETH_GROUND_UNIT_IP;
       AIR_UNIT_IP = m_config.ETH_AIR_UNIT_IP;

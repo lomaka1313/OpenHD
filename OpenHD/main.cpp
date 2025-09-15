@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
   openhd::generateSettingsDirectoryIfNonExists();
 
   // Generate the keys and delete pw if needed
-  // OHDInterface::generate_keys_from_pw_if_exists_and_delete();
+  OHDInterface::generate_keys_from_pw_if_exists_and_delete();
 
   // Parse the program arguments, also uses the "yes if file exists" pattern for some params
   const OHDRunOptions options=parse_run_parameters(argc,argv);

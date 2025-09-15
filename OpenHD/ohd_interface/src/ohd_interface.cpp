@@ -231,11 +231,13 @@ void OHDInterface::print_internal_fec_optimization_method() {
 }
 
 std::shared_ptr<OHDLink> OHDInterface::get_link_handle() {
-  if (m_ethernet_link) {  // Check if EthernetLink is available
+  if (m_ethernet_link) {
+    m_console->warn("Using alternative Link: Ethernet");
     return m_ethernet_link;
   }
 
   if (m_wb_link) {
+    // m_console->warn("Using Link: OpenHD-WifiBroadCast");
     return m_wb_link;
   }
   return nullptr;

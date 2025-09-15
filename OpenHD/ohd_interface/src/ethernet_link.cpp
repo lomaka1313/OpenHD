@@ -18,7 +18,7 @@ EthernetLink::EthernetLink(const openhd::Config& config, OHDProfile profile)
 }
 
 EthernetLink::EthernetLink(OHDProfile profile)
-    : EthernetLink(openhd::Config(), profile) {}
+    : EthernetLink(openhd::load_config(), profile) {}
 
 EthernetLink::~EthernetLink() {
   // Stop background receivers
@@ -41,6 +41,7 @@ void EthernetLink::initialize_air_unit() {
 
   // Start telemetry receiver in the background
   if (m_telemetry_rx) m_telemetry_rx->runInBackground();
+  std::cout << "Started telemetry and video via UDP" << std::endl;
 }
 
 void EthernetLink::initialize_ground_unit() {
@@ -51,8 +52,7 @@ void EthernetLink::initialize_ground_unit() {
       });
 
   // Initialize telemetry transmitter and receiver for bidirectional telemetry
-  m_telemetry_tx =
-      std::make_unique<openhd::UDPForwarder>(m_config.ETH_AIR_UNIT_IP, m_config.ETH_TELEMETRY_PORT);
+  m_telemetry_tx = std::make_unique<openhd::UDPForwarder>(m_config.ETH_AIR_UNIT_IP, m_config.ETH_TELEMETRY_PORT);
   m_telemetry_rx = std::make_unique<openhd::UDPReceiver>(
       "0.0.0.0", m_config.ETH_TELEMETRY_PORT, [this](const uint8_t* data, std::size_t len) {
         handle_telemetry_data(data, len);  // Process incoming telemetry
@@ -61,13 +61,17 @@ void EthernetLink::initialize_ground_unit() {
   // Start video and telemetry receivers in the background
   if (m_video_rx) m_video_rx->runInBackground();
   if (m_telemetry_rx) m_telemetry_rx->runInBackground();
+  std::cout << "Started telemetry and video via UDP" << std::endl;
 }
 
 void EthernetLink::transmit_telemetry_data(TelemetryTxPacket packet) {
   // Send telemetry data to the destination
+    openhd::log::create_or_get("EthernetLink")->info("transmit_telemetry_data start");
   if (m_telemetry_tx) {
+    openhd::log::create_or_get("EthernetLink")->info("transmit_video_data");
     m_telemetry_tx->forwardPacketViaUDP(packet.data->data(),
                                         packet.data->size());
+    openhd::log::create_or_get("EthernetLink")->info("transmit_telemetry_data end");
   }
 }
 
@@ -75,21 +79,26 @@ void EthernetLink::transmit_video_data(
     int stream_index,
     const openhd::FragmentedVideoFrame& fragmented_video_frame) {
   // Send video data fragments to the destination
+  openhd::log::create_or_get("EthernetLink")->info("transmit_video_data");
   if (m_video_tx) {
     for (const auto& fragment : fragmented_video_frame.frame_fragments) {
       m_video_tx->forwardPacketViaUDP(fragment->data(), fragment->size());
     }
+  openhd::log::create_or_get("EthernetLink")->info("transmit_video_data enhd [{}]", m_video_tx->client_addr);
   }
 }
 
 void EthernetLink::handle_video_data(int stream_index, const uint8_t* data,
                                      int data_len) {
   // Forward incoming video data to the upper layer
+  openhd::log::create_or_get("EthernetLink")->info("handle_video_data");
   on_receive_video_data(stream_index, data, data_len);
 }
 
 void EthernetLink::handle_telemetry_data(const uint8_t* data, int data_len) {
   // Forward incoming telemetry data to the upper layer
+  openhd::log::create_or_get("EthernetLink")->info("handle_telemetry_data start");
   auto shared = std::make_shared<std::vector<uint8_t>>(data, data + data_len);
   on_receive_telemetry_data(shared);
+  openhd::log::create_or_get("EthernetLink")->info("handle_telemetry_data end");
 }

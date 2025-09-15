@@ -26,7 +26,7 @@ OHDInterface::OHDInterface(OHDPlatform platform1,OHDProfile profile1,std::shared
   const auto config=openhd::load_config();
 
   if (config.ETH_LINK_ENABLED) {
-    m_ethernet_link = std::make_shared<EthernetLink>(m_profile);
+    m_ethernet_link = std::make_shared<EthernetLink>(config, m_profile);
     m_console->warn("Using Link: EthernetLink");
     return;
   }

@@ -17,9 +17,6 @@ EthernetLink::EthernetLink(const openhd::Config& config, OHDProfile profile)
   }
 }
 
-EthernetLink::EthernetLink(OHDProfile profile)
-    : EthernetLink(openhd::load_config(), profile) {}
-
 EthernetLink::~EthernetLink() {
   // Stop background receivers
   if (m_video_rx) m_video_rx->stopBackground();

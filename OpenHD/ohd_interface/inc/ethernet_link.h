@@ -12,7 +12,6 @@
 class EthernetLink : public OHDLink {
  public:
   EthernetLink(const openhd::Config& config, OHDProfile profile);
-  EthernetLink(OHDProfile profile);
   ~EthernetLink();
 
   // OHDLink implementations

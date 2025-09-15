@@ -64,7 +64,6 @@ void EthernetLink::initialize_ground_unit() {
 void EthernetLink::transmit_telemetry_data(TelemetryTxPacket packet) {
   // Send telemetry data to the destination
   if (m_telemetry_tx) {
-    openhd::log::create_or_get("EthernetLink")->info("transmit_video_data");
     m_telemetry_tx->forwardPacketViaUDP(packet.data->data(),
                                         packet.data->size());
   }

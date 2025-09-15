@@ -51,8 +51,8 @@ static void write_file_ground(){
 
 // Structure for Ethernet configuration
 struct EthernetConfig {
-  std::string ground_unit_ip = "192.168.2.1";
-  std::string air_unit_ip = "192.168.2.18";
+  std::string ground_unit_ip = "192.168.3.1";
+  std::string air_unit_ip = "192.168.3.18";
   int video_port = 5910;
   int telemetry_port = 5920;
 

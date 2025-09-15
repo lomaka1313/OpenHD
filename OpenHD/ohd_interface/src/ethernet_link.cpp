@@ -9,22 +9,6 @@
 
 EthernetLink::EthernetLink(const openhd::Config& config, OHDProfile profile)
     : m_config(config), m_profile(profile) {
-  // Load the Ethernet configuration from ethernet.txt if it exists
-  if (m_config.ETH_LINK_ENABLED) {
-    try {
-      GROUND_UNIT_IP = m_config.ETH_GROUND_UNIT_IP;
-      AIR_UNIT_IP = m_config.ETH_AIR_UNIT_IP;
-      VIDEO_PORT = m_config.ETH_VIDEO_PORT;
-      TELEMETRY_PORT = m_config.ETH_TELEMETRY_PORT;
-    } catch (const std::exception& ex) {
-      std::cerr << "Failed to read ethernet.txt: " << ex.what() << std::endl;
-      throw;
-    }
-  } else {
-    std::cerr << "ethernet.txt not found. Using default configuration."
-              << std::endl;
-  }
-
   // Initialize either air or ground unit based on the profile
   if (m_profile.is_air) {
     initialize_air_unit();
@@ -45,13 +29,13 @@ EthernetLink::~EthernetLink() {
 void EthernetLink::initialize_air_unit() {
   // Initialize video transmitter for sending video to the ground unit
   m_video_tx =
-      std::make_unique<openhd::UDPForwarder>(GROUND_UNIT_IP, VIDEO_PORT);
+      std::make_unique<openhd::UDPForwarder>(m_config.ETH_GROUND_UNIT_IP, m_config.ETH_VIDEO_PORT);
 
   // Initialize telemetry transmitter and receiver for bidirectional telemetry
   m_telemetry_tx =
-      std::make_unique<openhd::UDPForwarder>(GROUND_UNIT_IP, TELEMETRY_PORT);
+      std::make_unique<openhd::UDPForwarder>(m_config.ETH_GROUND_UNIT_IP, m_config.ETH_TELEMETRY_PORT);
   m_telemetry_rx = std::make_unique<openhd::UDPReceiver>(
-      "0.0.0.0", TELEMETRY_PORT, [this](const uint8_t* data, std::size_t len) {
+      "0.0.0.0", m_config.ETH_TELEMETRY_PORT, [this](const uint8_t* data, std::size_t len) {
         handle_telemetry_data(data, len);  // Process incoming telemetry
       });
 
@@ -62,15 +46,15 @@ void EthernetLink::initialize_air_unit() {
 void EthernetLink::initialize_ground_unit() {
   // Initialize video receiver for receiving video from the air unit
   m_video_rx = std::make_unique<openhd::UDPReceiver>(
-      "0.0.0.0", VIDEO_PORT, [this](const uint8_t* data, std::size_t len) {
+      "0.0.0.0", m_config.ETH_VIDEO_PORT, [this](const uint8_t* data, std::size_t len) {
         handle_video_data(0, data, len);  // Process incoming video
       });
 
   // Initialize telemetry transmitter and receiver for bidirectional telemetry
   m_telemetry_tx =
-      std::make_unique<openhd::UDPForwarder>(AIR_UNIT_IP, TELEMETRY_PORT);
+      std::make_unique<openhd::UDPForwarder>(m_config.ETH_AIR_UNIT_IP, m_config.ETH_TELEMETRY_PORT);
   m_telemetry_rx = std::make_unique<openhd::UDPReceiver>(
-      "0.0.0.0", TELEMETRY_PORT, [this](const uint8_t* data, std::size_t len) {
+      "0.0.0.0", m_config.ETH_TELEMETRY_PORT, [this](const uint8_t* data, std::size_t len) {
         handle_telemetry_data(data, len);  // Process incoming telemetry
       });
 

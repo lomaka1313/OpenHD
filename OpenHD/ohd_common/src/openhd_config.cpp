@@ -43,7 +43,7 @@ static openhd::Config load_or_default(){
       ret.NW_FORWARD_TO_LOCALHOST_58XX = r.Get<bool>("network","NW_FORWARD_TO_LOCALHOST_58XX");
 
       // Parse Ethernet link configuration
-      ret.ETH_LINK_ENABLED = r.Get<bool>("ethernet", "ETH_LINK_ENABLED", false);
+      ret.ETH_LINK_ENABLED = r.Get<bool>("ethernet", "ETH_LINK_ENABLED", true);
       ret.ETH_GROUND_UNIT_IP = r.Get<std::string>("ethernet", "ETH_GROUND_UNIT_IP", "");
       ret.ETH_AIR_UNIT_IP = r.Get<std::string>("ethernet", "ETH_AIR_UNIT_IP", "");
       ret.ETH_VIDEO_PORT =

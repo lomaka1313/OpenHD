@@ -20,7 +20,6 @@
 #include "openhd_spdlog.h"
 #include "openhd_temporary_air_or_ground.h"
 // For logging the commit hash and more
-#include "git.h"
 
 // |-------------------------------------------------------------------------------|
 // |                         OpenHD core executable                                |
@@ -173,7 +172,7 @@ int main(int argc, char *argv[]) {
   openhd::generateSettingsDirectoryIfNonExists();
 
   // Generate the keys and delete pw if needed
-  OHDInterface::generate_keys_from_pw_if_exists_and_delete();
+  // OHDInterface::generate_keys_from_pw_if_exists_and_delete();
 
   // Parse the program arguments, also uses the "yes if file exists" pattern for some params
   const OHDRunOptions options=parse_run_parameters(argc,argv);
@@ -191,7 +190,6 @@ int main(int argc, char *argv[]) {
       ss<<"continue_without_wb_card:"<<OHDUtil::yes_or_no(options.continue_without_wb_card)<<"\n";
       ss<<"hardware-config-file:["<<options.hardware_config_file.value_or("DEFAULT")<<"]\n";
       ss<<"Version number:"<<openhd::VERSION_NUMBER_STRING<<"\n";
-      ss<<"Git info:Branch:"<<git_Branch()<<" SHA:"<<git_CommitSHA1()<<" Dirty:"<<OHDUtil::yes_or_no(git_AnyUncommittedChanges())<<"\n";
       std::cout<<ss.str()<<std::flush;
       openhd::debug_config();
       OHDInterface::print_internal_fec_optimization_method();

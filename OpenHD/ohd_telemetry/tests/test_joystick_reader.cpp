@@ -20,8 +20,8 @@ int main() {
   static bool quit=false;
   signal(SIGTERM, [](int sig){ quit= true;});
   while (!quit){
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    std::cout<<JoystickReader::curr_state_to_string(joystick_reader->get_current_state())<<"\n";
+    // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    // std::cout<<JoystickReader::curr_state_to_string(joystick_reader->get_current_state())<<"\n";
   }
 
   return 0;

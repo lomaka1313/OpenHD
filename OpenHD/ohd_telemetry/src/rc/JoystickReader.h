@@ -1,12 +1,11 @@
 //
 // Created by consti10 on 22.08.22.
 //
-#ifdef OPENHD_TELEMETRY_SDL_FOR_JOYSTICK_FOUND
-#ifndef OPENHD_OPENHD_OHD_TELEMETRY_SRC_RC_JOYSTICKREADER_H_
-#define OPENHD_OPENHD_OHD_TELEMETRY_SRC_RC_JOYSTICKREADER_H_
+#pragma once
 
 #include <array>
 #include <functional>
+#include <map>
 #include <mutex>
 #include <optional>
 #include <sstream>
@@ -25,7 +24,19 @@
  * time though.
  * Theoretically, we could just use this thread also for sending the RC data via mavlink - but this
  * is a bit dangerous, since I don't completely trust SDL yet (in regards to disconnecting joysticks).
- */
+*/
+struct BUTTONS_TO_CHANNEL_MAP {
+  std::array<uint16_t,3> dependency{};
+  uint16_t channel{};
+  bool single;
+};
+static std::map<uint8_t,BUTTONS_TO_CHANNEL_MAP> buttons_map = std::map<uint8_t,BUTTONS_TO_CHANNEL_MAP>{
+  {0, {{0}, 5, true}},
+  {1, {{2,3}, 6}},
+  {2, {{1,3}, 6}},
+  {3, {{1,2}, 6}},
+  {4, {{4,5,6}, 7}},
+};
 class JoystickReader {
  public:
   // See mavlink RC override https://mavlink.io/en/messages/common.html#RC_CHANNELS_OVERRIDE
@@ -33,8 +44,10 @@ class JoystickReader {
   // the rc channel override message(s) support 18 values, so we do so, too
   static constexpr auto N_CHANNELS=18;
   // We use the first 8 Channels for "axis" joystick values
-  static constexpr auto N_CHANNELS_RESERVED_FOR_AXES=8;
+  static constexpr auto N_CHANNELS_RESERVED_FOR_AXES=4;
+  static constexpr auto N_CHANNELS_RESERVED_FOR_SLIDERS=4;
   static constexpr uint16_t VALUE_BUTTON_UP=2000;
+  static constexpr uint16_t VALUE_BUTTON_MIDDLE=1500;
   static constexpr uint16_t VALUE_BUTTON_DOWN=1000;
   struct CurrChannelValues{
     std::array<uint16_t,N_CHANNELS> values{DEFAULT_RC_CHANNELS_VALUE};
@@ -68,6 +81,3 @@ class JoystickReader {
   void write_matching_axis(std::array<uint16_t,JoystickReader::N_CHANNELS>& rc_data,uint8_t axis_index,int16_t value);
   static void write_matching_button(std::array<uint16_t,18>&rc_data,uint8_t button,bool up);
 };
-
-#endif //OPENHD_OPENHD_OHD_TELEMETRY_SRC_RC_JOYSTICKREADER_H_
-#endif //OPENHD_TELEMETRY_SDL_FOR_JOYSTICK_FOUND

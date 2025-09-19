@@ -1,9 +1,7 @@
 //
 // Created by consti10 on 07.11.22.
 //
-#ifdef OPENHD_TELEMETRY_SDL_FOR_JOYSTICK_FOUND
-#ifndef OPENHD_OPENHD_OHD_TELEMETRY_SRC_RC_RCJOYSTICKSENDER_H_
-#define OPENHD_OPENHD_OHD_TELEMETRY_SRC_RC_RCJOYSTICKSENDER_H_
+#pragma once
 
 #include "JoystickReader.h"
 #include "../mav_helper.h"
@@ -39,6 +37,3 @@ class RcJoystickSender {
   std::mutex m_chan_map_mutex;
   openhd::CHAN_MAP m_chan_map;
 };
-
-#endif  // OPENHD_OPENHD_OHD_TELEMETRY_SRC_RC_RCJOYSTICKSENDER_H_
-#endif //OPENHD_TELEMETRY_SDL_FOR_JOYSTICK_FOUND

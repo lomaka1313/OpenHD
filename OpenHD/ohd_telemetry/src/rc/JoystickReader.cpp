@@ -1,7 +1,6 @@
 //
 // Created by consti10 on 22.08.22.
 //
-#ifdef OPENHD_TELEMETRY_SDL_FOR_JOYSTICK_FOUND
 #include "JoystickReader.h"
 
 #include <SDL2/SDL.h>
@@ -178,6 +177,7 @@ void JoystickReader::wait_for_events(const int timeout_ms) {
 int JoystickReader::process_event(void *event1,std::array<uint16_t,N_CHANNELS>& current) {
   auto* event=(SDL_Event*)event1;
   int ret=0;
+  m_console->debug("Joystick event: [{}]", event->type);
   switch (event->type) {
     case SDL_JOYAXISMOTION:
       m_console->debug("Joystick {}, Axis {} moved to {}", event->jaxis.which, event->jaxis.axis, event->jaxis.value);
@@ -185,13 +185,13 @@ int JoystickReader::process_event(void *event1,std::array<uint16_t,N_CHANNELS>& 
       ret= 2;
       break;
     case SDL_JOYBUTTONDOWN:
-      m_console->debug("Button down");
-      write_matching_button(current,event->jbutton.button, false);
+      m_console->debug("Button {} down", event->jbutton.button);
+      write_matching_button(current, event->jbutton.button, true);
       ret=5;
       break;
     case SDL_JOYBUTTONUP:
-      m_console->debug("Button up");
-      write_matching_button(current,event->jbutton.button, true);
+      m_console->debug("Button {} up", event->jbutton.button);
+      write_matching_button(current, event->jbutton.button, false);
       ret=4;
       break;
     case SDL_QUIT:
@@ -248,13 +248,13 @@ void JoystickReader::write_matching_axis(std::array<uint16_t, JoystickReader::N_
   rc_data[axis_index]=remap_sdl_to_mavlink(value);
 }
 
-void JoystickReader::write_matching_button(std::array<uint16_t, 18>& rc_data,const Uint8 button, bool up) {
+void JoystickReader::write_matching_button(std::array<uint16_t, 18>& rc_data,const Uint8 button, bool pressed) {
   // The mavlink rc channels override message has more than enough "channels" anyways.
   //However, we could optimize here putting multiple buttons (aka bool) into one channel
+  // const auto map = buttons_map.at(button);
+
   const int channel_index=JoystickReader::N_CHANNELS_RESERVED_FOR_AXES+button;
   if(channel_index<rc_data.size()){
-    rc_data[channel_index] = up ? JoystickReader::VALUE_BUTTON_UP : JoystickReader::VALUE_BUTTON_DOWN;
+    rc_data[channel_index] = pressed ? JoystickReader::VALUE_BUTTON_UP : JoystickReader::VALUE_BUTTON_DOWN;
   }
 }
-
-#endif //OPENHD_TELEMETRY_SDL_FOR_JOYSTICK_FOUND

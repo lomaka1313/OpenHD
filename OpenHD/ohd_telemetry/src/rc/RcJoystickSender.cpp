@@ -1,7 +1,6 @@
 //
 // Created by consti10 on 07.11.22.
 //
-#ifdef OPENHD_TELEMETRY_SDL_FOR_JOYSTICK_FOUND
 #include "RcJoystickSender.h"
 
 #include <utility>
@@ -65,5 +64,3 @@ openhd::CHAN_MAP RcJoystickSender::get_current_channel_mapping() {
   std::lock_guard<std::mutex> guard(m_chan_map_mutex);
   return m_chan_map;
 }
-
-#endif //OPENHD_TELEMETRY_SDL_FOR_JOYSTICK_FOUND

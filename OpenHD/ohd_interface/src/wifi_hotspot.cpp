@@ -30,7 +30,7 @@ static bool create_hotspot_connection_file(const WiFiCard& card,const bool is_ai
                                  "ipv4.method shared"});
   OHDUtil::run_command("nmcli",{"con modify ", OHD_WIFI_HOTSPOT_CONNECTION_NAME," wifi-sec.key-mgmt wpa-psk"});
   OHDUtil::run_command("nmcli",{"con modify ", OHD_WIFI_HOTSPOT_CONNECTION_NAME," wifi-sec.psk \"openhdopenhd\""});
-  OHDUtil::run_command("nmcli",{"con modify",OHD_WIFI_HOTSPOT_CONNECTION_NAME,"ipv4.addresses 192.168.3.1/24"});
+  OHDUtil::run_command("nmcli",{"con modify",OHD_WIFI_HOTSPOT_CONNECTION_NAME,"ipv4.addresses 192.168.3.2/24"});
   return true;
 }
 static void remove_hotspot_connection_file(){

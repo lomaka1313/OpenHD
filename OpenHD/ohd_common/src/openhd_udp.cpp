@@ -1,26 +1,6 @@
-/******************************************************************************
- * OpenHD
- *
- * Licensed under the GNU General Public License (GPL) Version 3.
- *
- * This software is provided "as-is," without warranty of any kind, express or
- * implied, including but not limited to the warranties of merchantability,
- * fitness for a particular purpose, and non-infringement. For details, see the
- * full license in the LICENSE file provided with this source code.
- *
- * Non-Military Use Only:
- * This software and its associated components are explicitly intended for
- * civilian and non-military purposes. Use in any military or defense
- * applications is strictly prohibited unless explicitly and individually
- * licensed otherwise by the OpenHD Team.
- *
- * Contributors:
- * A full list of contributors can be found at the OpenHD GitHub repository:
- * https://github.com/OpenHD
- *
- * © OpenHD, All Rights Reserved.
- ******************************************************************************/
-
+//
+// Created by consti10 on 22.01.24.
+//
 #include "openhd_udp.h"
 
 #include <arpa/inet.h>
@@ -37,7 +17,7 @@ static std::shared_ptr<spdlog::logger> get_console() {
 }
 
 openhd::UDPForwarder::UDPForwarder(std::string client_addr1,
-                                   int client_udp_port1)
+                                   int client_udp_port1, bool qos)
     : client_addr(std::move(client_addr1)), client_udp_port(client_udp_port1) {
   sockfd = socket(AF_INET, SOCK_DGRAM, 0);
   if (sockfd < 0) {
@@ -51,6 +31,24 @@ openhd::UDPForwarder::UDPForwarder(std::string client_addr1,
   // saddr.sin_addr.s_addr = inet_addr(client_addr.c_str());
   inet_aton(client_addr.c_str(), (in_addr *)&saddr.sin_addr.s_addr);
   saddr.sin_port = htons((uint16_t)client_udp_port);
+
+  if (qos) {
+    // http://103.84.119.131:8080/Clients/help/content/polman/docs/p_tos_dscp_table.html
+    // Note: regarding this table DSCP hex value equals to TOS hex value
+    int dscp_value = 0x2E;
+
+    // Note: IP_TOS uses the full 8-bit TOS field, where the first 6 bits are DSCP
+    // For EF, the TOS value is 0xBA (10111000 in binary)
+    // The exact constant might vary by OS/kernel version; use appropriate value for your target system
+    if (setsockopt(sockfd, IPPROTO_IP, IP_TOS, &dscp_value, sizeof(dscp_value)) < 0) {
+      std::stringstream message;
+      message << "Specifying QOS failed, as setsockopt IP_TOS failed:" << strerror(errno) << "\n";
+      get_console()->warn(message.str());
+    } else {
+      get_console()->info("DSCP value set to ", dscp_value);
+    }
+  }
+
   get_console()->info("UDPForwarder::configured for {} {}", client_addr,
                       client_udp_port);
 }
@@ -107,16 +105,18 @@ void openhd::UDPMultiForwarder::forwardPacketViaUDP(
   }
 }
 
-const std::list<std::unique_ptr<openhd::UDPForwarder>> &
-openhd::UDPMultiForwarder::getForwarders() const {
+const std::list<std::unique_ptr<openhd::UDPForwarder>>
+    &openhd::UDPMultiForwarder::getForwarders() const {
   return udpForwarders;
 }
 
 openhd::UDPReceiver::UDPReceiver(std::string client_addr, int client_udp_port,
                                  openhd::UDPReceiver::OUTPUT_DATA_CALLBACK cb)
-    : mCb(cb) {
-  mSocket = openhd::openUdpSocketForReceiving(client_addr, client_udp_port);
-  get_console()->info("UDPReceiver created with {}:{}", client_addr,
+    : mCb(cb),
+      mBindAddress(std::move(client_addr)),
+      mBindPort(client_udp_port) {
+    rebindSocket();
+    get_console()->info("UDPReceiver created with {}:{}", client_addr,
                       client_udp_port);
 }
 
@@ -135,22 +135,38 @@ void openhd::UDPReceiver::loopUntilError() {
         recv(mSocket, buff->data(), buff->size(), MSG_WAITALL);
     if (message_length > 0) {
       mCb(buff->data(), (size_t)message_length);
-    } else {
-      // this can also come from the shutdown, in which case it is not an error.
-      // But this way we break out of the loop.
-      if (receiving) {
-        if (std::chrono::steady_clock::now() - m_last_receive_error_log >=
-            std::chrono::seconds(3)) {
-          get_console()->warn("Got message length of: {} log_skip_count:{}",
-                              message_length,
-                              m_last_receive_error_log_skip_count);
-          m_last_receive_error_log = std::chrono::steady_clock::now();
-          m_last_receive_error_log_skip_count = 0;
-        } else {
-          m_last_receive_error_log_skip_count++;
-        }
-      }
+      continue;
     }
+
+    if (message_length < 0) {
+      if (errno == EAGAIN ||
+          errno == EWOULDBLOCK ||
+          errno == EINTR) {
+        // timeout – нормальна ситуація при обриві лінку
+        continue;
+      }
+
+      if (errno == ECONNRESET ||
+          errno == ENETDOWN ||
+          errno == ENODEV) {
+
+        get_console()->warn(
+            "UDP socket error {}, rebinding...",
+            strerror(errno));
+
+        // retry until interface comes back
+        while (receiving && !rebindSocket()) {
+          std::this_thread::sleep_for(
+              std::chrono::milliseconds(500));
+        }
+        continue;
+      }
+
+      get_console()->warn("UDP recv fatal error {} {}",
+                          errno, strerror(errno));
+    }
+
+    get_console()->warn("Got message length of: {}", message_length);
   }
   get_console()->debug("UDP end");
 }
@@ -180,6 +196,7 @@ void openhd::UDPReceiver::stopLooping() {
   // https://github.com/mavlink/MAVSDK/blob/main/src/mavsdk/core/udp_connection.cpp#L102
   shutdown(mSocket, SHUT_RDWR);
   close(mSocket);
+  mSocket = -1;
 }
 
 void openhd::UDPReceiver::runInBackground() {
@@ -199,6 +216,29 @@ void openhd::UDPReceiver::stopBackground() {
     receiverThread->join();
   }
   receiverThread = nullptr;
+}
+
+bool openhd::UDPReceiver::rebindSocket() {
+  if (mSocket >= 0) {
+    stopLooping();
+    receiving = true;
+  }
+
+  mSocket = openUdpSocketForReceiving(mBindAddress, mBindPort);
+  if (mSocket < 0) {
+    get_console()->warn("UDP rebind failed {}:{}",
+                        mBindAddress, mBindPort);
+    return false;
+  }
+
+  struct timeval tv {};
+  tv.tv_sec = 1;
+  tv.tv_usec = 0;
+  setsockopt(mSocket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+  get_console()->info("UDP rebind success {}:{}",
+                      mBindAddress, mBindPort);
+  return true;
 }
 
 int openhd::openUdpSocketForReceiving(const std::string &address,

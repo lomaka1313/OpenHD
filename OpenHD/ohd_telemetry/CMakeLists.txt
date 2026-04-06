@@ -1,154 +1,148 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(OHDTelemetryLib)
+project(OHDCommon)
 
-set(CMAKE_CXX_STANDARD 17)
-
-add_library(OHDTelemetryLib STATIC) # initialized below
-add_library(OHDTelemetryLib::OHDTelemetryLib ALIAS OHDTelemetryLib)
-
-# Only needed when building this submodule manually
-add_subdirectory(../ohd_common commonlib EXCLUDE_FROM_ALL)
-
-find_package(Threads REQUIRED)
-target_link_libraries(OHDTelemetryLib PUBLIC Threads::Threads)
-
-#find_package(spdlog REQUIRED)
-#target_link_libraries(OHDTelemetryLib PRIVATE spdlog::spdlog)
-
-# For joystick, optional (but if SDL2 is not found at compile time, RC won't be available at run time)
-find_package(SDL2 QUIET)
-if(SDL2_FOUND)
-    message(STATUS "SDL2 found")
-    target_compile_definitions(OHDTelemetryLib PUBLIC OPENHD_TELEMETRY_SDL_FOR_JOYSTICK_FOUND)
-    target_include_directories(OHDTelemetryLib PRIVATE ${SDL2_INCLUDE_DIRS})
-    target_link_libraries(OHDTelemetryLib PRIVATE ${SDL2_LIBRARIES})
-else()
-    message(STATUS "SDL Features (Joystick) will be unavailable!")
+if (TARGET OHDCommonLib)
+    message(STATUS "OHDCommonLib already built")
+    return()
 endif()
 
-SET(sources
-    "src/endpoints/MEndpoint.cpp"
-    "src/endpoints/MEndpoint.h"
-    "src/endpoints/SerialEndpoint.cpp"
-    "src/endpoints/SerialEndpoint.h"
-    "src/endpoints/UDPEndpoint2.cpp"
-    "src/endpoints/UDPEndpoint2.h"
-    "src/endpoints/WBEndpoint.cpp"
-    "src/endpoints/WBEndpoint.h"
+#----------------------------------------------------------------------------------------------------------------------
+# general settings and options
+#----------------------------------------------------------------------------------------------------------------------
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Spams build due to nlohmann::json
+add_compile_options(-Wno-psabi)
 
-    "src/internal/LogCustomOHDMessages.hpp"
-    "src/internal/OHDLinkStatisticsHelper.h"
-    "src/internal/OHDMainComponent.cpp"
-    "src/internal/OHDMainComponent.h"
-    "src/internal/onboard_computer_status.hpp"
-    "src/internal/onboard_computer_status_rpi.hpp"
-    "src/internal/OnboardComputerStatusProvider.cpp"
-    "src/internal/OnboardComputerStatusProvider.h"
-        src/last_known_position/LastKnowPosition.cpp
-     src/last_known_position/LastKnowPosition.h
+add_library(OHDCommonLib STATIC) # initialized below
+add_library(OHDCommonLib::OHDCommonLib ALIAS OHDCommonLib)
 
-    "src/mavsdk_temporary/connection.cpp"
-    "src/mavsdk_temporary/connection.h"
-    "src/mavsdk_temporary/connection_result.cpp"
-    "src/mavsdk_temporary/connection_result.h"
-    "src/mavsdk_temporary/locked_queue.h"
-    "src/mavsdk_temporary/log.h"
-    "src/mavsdk_temporary/mavlink_channels.cpp"
-    "src/mavsdk_temporary/mavlink_channels.h"
-    "src/mavsdk_temporary/mavlink_include.h"
-    "src/mavsdk_temporary/mavlink_message_handler.cpp"
-    "src/mavsdk_temporary/mavlink_message_handler.h"
-    "src/mavsdk_temporary/mavlink_parameter_receiver.cpp"
-    "src/mavsdk_temporary/mavlink_parameter_receiver.h"
-    "src/mavsdk_temporary/mavlink_parameter_set.cpp"
-    "src/mavsdk_temporary/mavlink_parameter_set.h"
-    "src/mavsdk_temporary/mavlink_parameter_subscription.cpp"
-    "src/mavsdk_temporary/mavlink_parameter_subscription.h"
-    "src/mavsdk_temporary/mavlink_receiver.cpp"
-    "src/mavsdk_temporary/mavlink_receiver.h"
-    "src/mavsdk_temporary/mavsdk_time.cpp"
-    "src/mavsdk_temporary/mavsdk_time.h"
-    "src/mavsdk_temporary/param_value.cpp"
-    "src/mavsdk_temporary/param_value.h"
-    "src/mavsdk_temporary/sender.h"
-    "src/mavsdk_temporary/sender_wrapper.h"
-    "src/mavsdk_temporary/XMavlinkParamProvider.cpp"
-    "src/mavsdk_temporary/XMavlinkParamProvider.h"
-    
-    "src/rc/JoystickReader.cpp"
-    "src/rc/JoystickReader.h"
-    "src/rc/RcJoystickSender.cpp"
-    "src/rc/RcJoystickSender.h"
-
-    "src/routing/MavlinkComponent.hpp"
-    "src/routing/MavlinkSystem.hpp"
-
-    "src/AirTelemetry.cpp"
-    "src/AirTelemetry.h"
-    "src/AirTelemetrySettings.h"
-    "src/GroundTelemetry.cpp"
-    "src/GroundTelemetry.h"
-    "src/mav_helper.h"
-    "src/mav_include.h"
-    "src/MavlinkComponent.h"
-    "src/OHDTelemetry.cpp"
-    "src/OHDTelemetry.h"
-    src/gpio_control/RaspberryPiGPIOControl.cpp
-    src/gpio_control/RaspberryPiGPIOControl.h
-    src/gpio_control/RaspberryPiGPIOControlSettings.h
-    src/gpio_control/RaspberryPiGPIOControlSettings.cpp
-    src/internal/ina219.cc
-    src/internal/ina219.h
-    src/endpoints/TCPEndpoint.cpp
-    src/endpoints/TCPEndpoint.h
-    src/GroundTelemetrySettings.cpp
-    src/AirTelemetrySettings.cpp
+# We use spdlog and json pretty much everywhere in OpenHD. Build it here, then make publicly available
+# 1) spdlog
+#find_package(spdlog REQUIRED)
+#set(SPDLOG_MASTER_PROJECT OFF)
+#add_subdirectory(lib/spdlog)
+# Public since we use it throughout OpenHD
+#target_link_libraries(OHDCommonLib PUBLIC spdlog::spdlog)
+set(SPDLOG_MASTER_PROJECT OFF)
+set(SPDLOG_PROJECT_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}/lib/spdlog)
+set(SPDLOG_SOURCES_DIRECTORY  ${SPDLOG_PROJECT_DIRECTORY}/src)
+set(spdlog_sources
+        #"${SPDLOG_SOURCES_DIRECTORY}/async.cpp"
+        "${SPDLOG_SOURCES_DIRECTORY}/bundled_fmtlib_format.cpp"
+        #"${SPDLOG_SOURCES_DIRECTORY}/color_sinks.cpp"
+        #"${SPDLOG_SOURCES_DIRECTORY}/file_sinks.cpp"
+        #"${SPDLOG_SOURCES_DIRECTORY}/spdlog.cpp"
+        #"${SPDLOG_SOURCES_DIRECTORY}/stdout_sinks.cpp"
 )
+#target_sources(OHDCommonLib PRIVATE ${spdlog_sources})
+#file(GLOB_RECURSE X_SPDLOG_HEADERS
+#        ${SPDLOG_PROJECT_DIRECTORY}/include/*.h
+#)
+#target_precompile_headers(OHDCommonLib PRIVATE ${SPDLOG_PROJECT_DIRECTORY}/include)
+#target_precompile_headers(OHDCommonLib PRIVATE ${X_SPDLOG_HEADERS})
+target_precompile_headers(OHDCommonLib PRIVATE ${SPDLOG_PROJECT_DIRECTORY}/include/spdlog/spdlog.h)
+target_include_directories(OHDCommonLib
+        PUBLIC
+        ${SPDLOG_PROJECT_DIRECTORY}/include)
 
-# Build it as a library
+# 2) nlohmann::json
+add_subdirectory(lib/json)
+# Public since we use it throughout OpenHD
+target_link_libraries(OHDCommonLib PUBLIC  nlohmann_json::nlohmann_json)
+# 3) geographiclib
+add_subdirectory(lib/geographiclib-c-2.0)
+target_link_libraries(OHDCommonLib PUBLIC geodc)
+
+find_package(Threads REQUIRED)
+target_link_libraries(OHDCommonLib PUBLIC Threads::Threads)
+#----------------------------------------------------------------------------------------------------------------------
+# sources
+#----------------------------------------------------------------------------------------------------------------------
+
+set(sources
+    "src/openhd_util.cpp"
+    "src/openhd_util_filesystem.cpp"
+    "src/openhd_settings_persistent.cpp"
+    "src/openhd_profile.cpp"
+    "src/openhd_platform.cpp"
+    "src/openhd_spdlog.cpp"
+    "src/openhd_reboot_util.cpp"
+    "src/openhd_config.cpp"
+    "src/openhd_util_async.cpp"
+    "src/openhd_external_device.cpp"
+    "src/openhd_action_handler.cpp"
+    "src/openhd_udp.cpp"
+    "src/openhd_tcp.cpp"
+    src/openhd_led.cpp
+    src/openhd_buttons.cpp
+    src/openhd_buttons_monitor.cpp
+    src/openhd_camera_state_helper.cpp
+    src/openhd_flight_mode_helper.cpp
+    src/openhd_object_tracking_helper.cpp
+    src/openhd_settings_imp.cpp
+    src/openhd_settings_directories.cpp
+    src/openhd_settings_persistent.cpp
+    src/openhd_util_time.cpp
+    src/openhd_bitrate.cpp
+    src/openhd_geo_utils.cpp
+    )
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${sources})
-target_sources(OHDTelemetryLib PRIVATE ${sources})
-target_include_directories(OHDTelemetryLib 
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+
+#----------------------------------------------------------------------------------------------------------------------
+# target
+#----------------------------------------------------------------------------------------------------------------------
+
+target_sources(OHDCommonLib PRIVATE ${sources})
+
+target_include_directories(OHDCommonLib
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc/>")
 
-target_link_libraries(OHDTelemetryLib PUBLIC OHDCommonLib)
+set_target_properties(OHDCommonLib PROPERTIES
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+        VERSION ${PROJECT_VERSION}
+        LINKER_LANGUAGE CXX)
 
-# include mavlink (header-only)
-add_library(mavlink INTERFACE)
-# from https://mavlink.io/en/mavgen_c/
-#You can supress the warnings in CMake using
-target_compile_options(mavlink INTERFACE -Wno-address-of-packed-member -Wno-cast-align)
-target_include_directories(mavlink INTERFACE ../lib/mavlink-headers/mavlink/v2.0)
-target_link_libraries(OHDTelemetryLib PUBLIC mavlink)
+add_executable(test_openhd_util test/test_openhd_util.cpp)
+target_link_libraries(test_openhd_util OHDCommonLib)
 
-# All the test files for development
-add_executable(test_serial_endpoint tests/test_serial_endpoint.cpp)
-target_link_libraries(test_serial_endpoint OHDTelemetryLib)
+add_executable(test_ohd_reboot test/test_ohd_reboot.cpp)
+target_link_libraries(test_ohd_reboot OHDCommonLib)
 
-add_executable(test_udp_endpoint tests/test_udp_endpoint.cpp)
-target_link_libraries(test_udp_endpoint OHDTelemetryLib)
+add_executable(test_config test/test_config.cpp)
+target_link_libraries(test_config OHDCommonLib)
 
-add_executable(test_tcp_server_endpoint tests/test_tcp_server_endpoint.cpp)
-target_link_libraries(test_tcp_server_endpoint OHDTelemetryLib)
+add_executable(test_logging test/test_logging.cpp)
+target_link_libraries(test_logging OHDCommonLib)
 
-add_executable(test_ground_locally tests/test_ground_locally.cpp)
-target_link_libraries(test_ground_locally OHDTelemetryLib)
+# this one is here but not really part of interface
+add_executable(test_led test/test_led.cpp)
+target_link_libraries(test_led OHDCommonLib)
 
-add_executable(test_air_locally tests/test_air_locally.cpp)
-target_link_libraries(test_air_locally OHDTelemetryLib)
+add_executable(test_openhd_async test/test_openhd_async.cpp)
+target_link_libraries(test_openhd_async OHDCommonLib)
 
-add_executable(test_ground_and_air_locally tests/test_ground_and_air_locally.cpp)
-target_link_libraries(test_ground_and_air_locally OHDTelemetryLib)
+add_executable(test_tcp_server test/test_tcp_server.cpp)
+target_link_libraries(test_tcp_server OHDCommonLib)
 
-add_executable(test_onboard_computer_status_read_stuff tests/test_onboard_computer_status_read_stuff.cpp)
-target_link_libraries(test_onboard_computer_status_read_stuff OHDTelemetryLib)
+#----------------------------------------------------------------------------------------------------------------------
+# Tests based on google testing framework
+#----------------------------------------------------------------------------------------------------------------------
+option(ENABLE_GOOGLE_TESTS "Enable tests based on google testing framework" OFF)
+message("Tests based on google testing framework enabled: ${ENABLE_GOOGLE_TESTS}")
 
-add_executable(test_joystick_reader tests/test_joystick_reader.cpp)
-target_link_libraries(test_joystick_reader OHDTelemetryLib)
+if (ENABLE_GOOGLE_TESTS)
+	include(FetchContent)
+	FetchContent_Declare(
+	  googletest
+	  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+	  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+	)
+	# For Windows: Prevent overriding the parent project's compiler/linker settings
+	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+	FetchContent_MakeAvailable(googletest)
 
-####
-# NOTE: We do not need MAVSDK for OpenHD, the small amount of code we share is directly included
-####
+	add_executable(test_history_collection test/test_history_collection.cpp)
+	target_link_libraries(test_history_collection OHDCommonLib GTest::gtest_main)
+endif ()
